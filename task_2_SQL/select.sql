@@ -18,26 +18,32 @@ FROM
     Personal p
 ORDER BY 
     vowel_count;
-WITH SalaryRank AS (
+WITH MaxMinSalaries AS (
     SELECT 
         id_dep,
-        name,
-        sal,
-        RANK() OVER (PARTITION BY id_dep ORDER BY sal DESC) AS max_salary_rank,
-        RANK() OVER (PARTITION BY id_dep ORDER BY sal ASC) AS min_salary_rank
+        MAX(sal) AS max_salary,
+        MIN(sal) AS min_salary
     FROM 
         Personal
+    GROUP BY 
+        id_dep
 )
-
 SELECT 
+    p.id_dep,
     p.name AS employee_name,
-    d.name AS department_name,
-    p.sal AS salary
+    p.sal AS salary,
+    'Max' AS salary_type
 FROM 
-    SalaryRank s
-JOIN 
-    Department d ON s.id_dep = d.id
-JOIN 
-    Personal p ON s.id_dep = p.id_dep
-WHERE 
-    s.max_salary_rank = 1 OR s.min_salary_rank = 1;
+    Personal p
+    JOIN MaxMinSalaries m ON p.id_dep = m.id_dep AND p.sal = m.max_salary
+UNION ALL
+SELECT 
+    p2.id_dep,
+    p2.name AS employee_name,
+    p2.sal AS salary,
+    'Min' AS salary_type
+FROM 
+    Personal p2
+    JOIN MaxMinSalaries m ON p2.id_dep = m.id_dep AND p2.sal = m.min_salary
+ORDER BY 
+    id_dep, salary_type;
